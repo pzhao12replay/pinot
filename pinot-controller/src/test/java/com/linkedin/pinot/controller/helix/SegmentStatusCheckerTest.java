@@ -22,6 +22,7 @@ import com.linkedin.pinot.common.utils.CommonConstants;
 import com.linkedin.pinot.common.utils.LLCSegmentName;
 import com.linkedin.pinot.controller.ControllerConf;
 import com.linkedin.pinot.controller.helix.core.PinotHelixResourceManager;
+import com.linkedin.pinot.controller.util.TableSizeReader;
 import com.yammer.metrics.core.MetricsRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +39,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 public class SegmentStatusCheckerTest {
@@ -48,6 +48,7 @@ public class SegmentStatusCheckerTest {
   private MetricsRegistry metricsRegistry;
   private ControllerMetrics controllerMetrics;
   private ControllerConf config;
+  private TableSizeReader tableSizeReader;
 
   @BeforeSuite
   public void setUp() throws Exception {
@@ -100,11 +101,22 @@ public class SegmentStatusCheckerTest {
       config = mock(ControllerConf.class);
       when(config.getStatusCheckerFrequencyInSeconds()).thenReturn(300);
       when(config.getStatusCheckerWaitForPushTimeInSeconds()).thenReturn(300);
+      when(config.getServerAdminRequestTimeoutSeconds()).thenReturn(100);
     }
     metricsRegistry = new MetricsRegistry();
     controllerMetrics = new ControllerMetrics(metricsRegistry);
     segmentStatusChecker = new SegmentStatusChecker(helixResourceManager, config);
     segmentStatusChecker.setMetricsRegistry(controllerMetrics);
+
+    tableSizeReader = mock(TableSizeReader.class);
+    segmentStatusChecker.setTableSizeReader(tableSizeReader);
+    TableSizeReader.TableSizeDetails tableSizeDetails = new TableSizeReader.TableSizeDetails(tableName);
+    tableSizeDetails.realtimeSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.realtimeSegments.estimatedSizeInBytes = 100L;
+    tableSizeDetails.offlineSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.offlineSegments.estimatedSizeInBytes = 200L;
+    doReturn(tableSizeDetails).when(tableSizeReader).getTableSizeDetails(anyString(), anyInt());
+
     segmentStatusChecker.runSegmentMetrics();
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
         ControllerGauge.SEGMENTS_IN_ERROR_STATE), 1);
@@ -114,6 +126,10 @@ public class SegmentStatusCheckerTest {
         ControllerGauge.PERCENT_OF_REPLICAS), 33);
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
         ControllerGauge.PERCENT_SEGMENTS_AVAILABLE), 100);
+    Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
+        ControllerGauge.REALTIME_TABLE_ESTIMATED_SIZE), 100L);
+    Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
+        ControllerGauge.OFFLINE_TABLE_ESTIMATED_SIZE), 200L);
     segmentStatusChecker.stop();
   }
 
@@ -167,11 +183,22 @@ public class SegmentStatusCheckerTest {
       config = mock(ControllerConf.class);
       when(config.getStatusCheckerFrequencyInSeconds()).thenReturn(300);
       when(config.getStatusCheckerWaitForPushTimeInSeconds()).thenReturn(300);
+      when(config.getServerAdminRequestTimeoutSeconds()).thenReturn(100);
     }
     metricsRegistry = new MetricsRegistry();
     controllerMetrics = new ControllerMetrics(metricsRegistry);
     segmentStatusChecker = new SegmentStatusChecker(helixResourceManager, config);
     segmentStatusChecker.setMetricsRegistry(controllerMetrics);
+
+    tableSizeReader = mock(TableSizeReader.class);
+    segmentStatusChecker.setTableSizeReader(tableSizeReader);
+    TableSizeReader.TableSizeDetails tableSizeDetails = new TableSizeReader.TableSizeDetails(tableName);
+    tableSizeDetails.realtimeSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.realtimeSegments.estimatedSizeInBytes = 100L;
+    tableSizeDetails.offlineSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.offlineSegments.estimatedSizeInBytes = 200L;
+    doReturn(tableSizeDetails).when(tableSizeReader).getTableSizeDetails(anyString(), anyInt());
+
     segmentStatusChecker.runSegmentMetrics();
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
         ControllerGauge.SEGMENTS_IN_ERROR_STATE), 0);
@@ -181,6 +208,10 @@ public class SegmentStatusCheckerTest {
         ControllerGauge.PERCENT_OF_REPLICAS), 100);
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
         ControllerGauge.PERCENT_SEGMENTS_AVAILABLE), 100);
+    Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
+        ControllerGauge.REALTIME_TABLE_ESTIMATED_SIZE), 100L);
+    Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
+        ControllerGauge.OFFLINE_TABLE_ESTIMATED_SIZE), 200L);
     segmentStatusChecker.stop();
   }
 
@@ -280,11 +311,22 @@ public class SegmentStatusCheckerTest {
       config = mock(ControllerConf.class);
       when(config.getStatusCheckerFrequencyInSeconds()).thenReturn(300);
       when(config.getStatusCheckerWaitForPushTimeInSeconds()).thenReturn(0);
+      when(config.getServerAdminRequestTimeoutSeconds()).thenReturn(100);
     }
     metricsRegistry = new MetricsRegistry();
     controllerMetrics = new ControllerMetrics(metricsRegistry);
     segmentStatusChecker = new SegmentStatusChecker(helixResourceManager, config);
     segmentStatusChecker.setMetricsRegistry(controllerMetrics);
+
+    tableSizeReader = mock(TableSizeReader.class);
+    segmentStatusChecker.setTableSizeReader(tableSizeReader);
+    TableSizeReader.TableSizeDetails tableSizeDetails = new TableSizeReader.TableSizeDetails(tableName);
+    tableSizeDetails.realtimeSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.realtimeSegments.estimatedSizeInBytes = 100L;
+    tableSizeDetails.offlineSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.offlineSegments.estimatedSizeInBytes = 200L;
+    doReturn(tableSizeDetails).when(tableSizeReader).getTableSizeDetails(anyString(), anyInt());
+
     segmentStatusChecker.runSegmentMetrics();
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
         ControllerGauge.SEGMENTS_IN_ERROR_STATE), 1);
@@ -292,6 +334,10 @@ public class SegmentStatusCheckerTest {
         ControllerGauge.NUMBER_OF_REPLICAS), 0);
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
         ControllerGauge.PERCENT_SEGMENTS_AVAILABLE), 75);
+    Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
+        ControllerGauge.REALTIME_TABLE_ESTIMATED_SIZE), 100L);
+    Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
+        ControllerGauge.OFFLINE_TABLE_ESTIMATED_SIZE), 200L);
     segmentStatusChecker.stop();
   }
 
@@ -328,11 +374,18 @@ public class SegmentStatusCheckerTest {
       config = mock(ControllerConf.class);
       when(config.getStatusCheckerFrequencyInSeconds()).thenReturn(300);
       when(config.getStatusCheckerWaitForPushTimeInSeconds()).thenReturn(300);
+      when(config.getServerAdminRequestTimeoutSeconds()).thenReturn(100);
     }
     metricsRegistry = new MetricsRegistry();
     controllerMetrics = new ControllerMetrics(metricsRegistry);
     segmentStatusChecker = new SegmentStatusChecker(helixResourceManager, config);
     segmentStatusChecker.setMetricsRegistry(controllerMetrics);
+
+    tableSizeReader = mock(TableSizeReader.class);
+    segmentStatusChecker.setTableSizeReader(tableSizeReader);
+    TableSizeReader.TableSizeDetails tableSizeDetails = new TableSizeReader.TableSizeDetails(tableName);
+    doReturn(tableSizeDetails).when(tableSizeReader).getTableSizeDetails(anyString(), anyInt());
+
     segmentStatusChecker.runSegmentMetrics();
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(tableName,
         ControllerGauge.SEGMENTS_IN_ERROR_STATE), 0);
@@ -434,11 +487,22 @@ public class SegmentStatusCheckerTest {
       config = mock(ControllerConf.class);
       when(config.getStatusCheckerFrequencyInSeconds()).thenReturn(300);
       when(config.getStatusCheckerWaitForPushTimeInSeconds()).thenReturn(300);
+      when(config.getServerAdminRequestTimeoutSeconds()).thenReturn(100);
     }
     metricsRegistry = new MetricsRegistry();
     controllerMetrics = new ControllerMetrics(metricsRegistry);
     segmentStatusChecker = new SegmentStatusChecker(helixResourceManager, config);
     segmentStatusChecker.setMetricsRegistry(controllerMetrics);
+    tableSizeReader = mock(TableSizeReader.class);
+
+    segmentStatusChecker.setTableSizeReader(tableSizeReader);
+    TableSizeReader.TableSizeDetails tableSizeDetails = new TableSizeReader.TableSizeDetails(tableName);
+    tableSizeDetails.realtimeSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.realtimeSegments.estimatedSizeInBytes = 100L;
+    tableSizeDetails.offlineSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.offlineSegments.estimatedSizeInBytes = 200L;
+    doReturn(tableSizeDetails).when(tableSizeReader).getTableSizeDetails(anyString(), anyInt());
+
     segmentStatusChecker.runSegmentMetrics();
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(externalView.getId(),
         ControllerGauge.SEGMENTS_IN_ERROR_STATE), 0);
@@ -480,11 +544,22 @@ public class SegmentStatusCheckerTest {
       config = mock(ControllerConf.class);
       when(config.getStatusCheckerFrequencyInSeconds()).thenReturn(300);
       when(config.getStatusCheckerWaitForPushTimeInSeconds()).thenReturn(300);
+      when(config.getServerAdminRequestTimeoutSeconds()).thenReturn(100);
     }
     metricsRegistry = new MetricsRegistry();
     controllerMetrics = new ControllerMetrics(metricsRegistry);
     segmentStatusChecker = new SegmentStatusChecker(helixResourceManager, config);
     segmentStatusChecker.setMetricsRegistry(controllerMetrics);
+
+    tableSizeReader = mock(TableSizeReader.class);
+    segmentStatusChecker.setTableSizeReader(tableSizeReader);
+    TableSizeReader.TableSizeDetails tableSizeDetails = new TableSizeReader.TableSizeDetails(tableName);
+    tableSizeDetails.realtimeSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.realtimeSegments.estimatedSizeInBytes = 100L;
+    tableSizeDetails.offlineSegments = new TableSizeReader.TableSubTypeSizeDetails();
+    tableSizeDetails.offlineSegments.estimatedSizeInBytes = 200L;
+    doReturn(tableSizeDetails).when(tableSizeReader).getTableSizeDetails(anyString(), anyInt());
+
     segmentStatusChecker.runSegmentMetrics();
     Assert.assertEquals(controllerMetrics.getValueOfTableGauge(tableName,
         ControllerGauge.SEGMENTS_IN_ERROR_STATE), 0);

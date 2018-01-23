@@ -19,6 +19,7 @@ package com.linkedin.pinot.controller.validation;
 import com.linkedin.pinot.common.config.QuotaConfig;
 import com.linkedin.pinot.common.config.SegmentsValidationAndRetentionConfig;
 import com.linkedin.pinot.common.config.TableConfig;
+import com.linkedin.pinot.common.metrics.ControllerMetrics;
 import com.linkedin.pinot.controller.util.TableSizeReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,8 +38,9 @@ import static org.mockito.Mockito.when;
 
 
 public class StorageQuotaCheckerTest {
-  TableSizeReader tableSizeReader;
-  TableConfig tableConfig;
+  private TableSizeReader tableSizeReader;
+  private TableConfig tableConfig;
+  private ControllerMetrics controllerMetrics;
   private QuotaConfig quotaConfig;
   private SegmentsValidationAndRetentionConfig validationConfig;
   private final File TEST_DIR = new File(StorageQuotaCheckerTest.class.getName());
@@ -48,6 +50,7 @@ public class StorageQuotaCheckerTest {
     tableSizeReader = mock(TableSizeReader.class);
     tableConfig = mock(TableConfig.class);
     quotaConfig = mock(QuotaConfig.class);
+    controllerMetrics = mock(ControllerMetrics.class);
     validationConfig = mock(SegmentsValidationAndRetentionConfig.class);
     when(tableConfig.getValidationConfig()).thenReturn(validationConfig);
     when(validationConfig.getReplicationNumber()).thenReturn(2);
@@ -61,7 +64,7 @@ public class StorageQuotaCheckerTest {
 
   @Test
   public void testNoQuota() {
-    StorageQuotaChecker checker = new StorageQuotaChecker(tableConfig, tableSizeReader);
+    StorageQuotaChecker checker = new StorageQuotaChecker(tableConfig, tableSizeReader, controllerMetrics);
     when(tableConfig.getQuotaConfig()).thenReturn(null);
     StorageQuotaChecker.QuotaCheckerResponse res =
         checker.isSegmentStorageWithinQuota(TEST_DIR, "myTable", "segment", 1000);
@@ -70,7 +73,7 @@ public class StorageQuotaCheckerTest {
 
   @Test
   public void testNoStorageQuotaConfig() {
-    StorageQuotaChecker checker = new StorageQuotaChecker(tableConfig, tableSizeReader);
+    StorageQuotaChecker checker = new StorageQuotaChecker(tableConfig, tableSizeReader, controllerMetrics);
     when(tableConfig.getQuotaConfig()).thenReturn(quotaConfig);
     when(quotaConfig.storageSizeBytes()).thenReturn(-1L);
     StorageQuotaChecker.QuotaCheckerResponse res =
@@ -107,7 +110,7 @@ public class StorageQuotaCheckerTest {
     setupTableSegmentSize(5800, 900);
     when(tableConfig.getQuotaConfig()).thenReturn(quotaConfig);
     when(quotaConfig.storageSizeBytes()).thenReturn(3000L);
-    StorageQuotaChecker checker = new StorageQuotaChecker(tableConfig, tableSizeReader);
+    StorageQuotaChecker checker = new StorageQuotaChecker(tableConfig, tableSizeReader, controllerMetrics);
     StorageQuotaChecker.QuotaCheckerResponse response =
         checker.isSegmentStorageWithinQuota(TEST_DIR, "testTable", "segment1", 1000);
     Assert.assertTrue(response.isSegmentWithinQuota);

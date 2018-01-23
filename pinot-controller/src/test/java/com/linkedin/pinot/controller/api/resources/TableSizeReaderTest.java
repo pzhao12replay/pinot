@@ -18,6 +18,8 @@ package com.linkedin.pinot.controller.api.resources;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.linkedin.pinot.common.metrics.ControllerGauge;
+import com.linkedin.pinot.common.metrics.ControllerMetrics;
 import com.linkedin.pinot.common.restlet.resources.SegmentSizeInfo;
 import com.linkedin.pinot.common.restlet.resources.TableSizeInfo;
 import com.linkedin.pinot.controller.helix.core.PinotHelixResourceManager;
@@ -47,10 +49,10 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 public class TableSizeReaderTest {
@@ -85,7 +87,6 @@ public class TableSizeReaderTest {
         return table.indexOf("realtime") >= 0;
       }
     });
-
     int counter = 0;
     // server0
     FakeSizeServer s = new FakeSizeServer(Arrays.asList("s1","s2", "s3"), serverPortStart + counter);
