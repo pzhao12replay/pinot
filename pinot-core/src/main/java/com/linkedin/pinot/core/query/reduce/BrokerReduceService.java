@@ -203,6 +203,13 @@ public class BrokerReduceService implements ReduceService<BrokerResponseNative> 
           setGroupByHavingResults(brokerResponseNative, aggregationFunctions, aggregationFunctionSelectStatus,
               brokerRequest.getGroupBy(), dataTableMap, brokerRequest.getHavingFilterQuery(),
               brokerRequest.getHavingFilterSubQueryMap());
+          if (brokerMetrics != null) {
+            long groupBySize = 0L;
+            for (AggregationResult aggregationResult : brokerResponseNative.getAggregationResults()) {
+              groupBySize = Math.max(aggregationResult.getGroupByResult().size(), groupBySize);
+            }
+            brokerMetrics.addMeteredTableValue(rawTableName, BrokerMeter.GROUP_BY_SIZE, groupBySize);
+          }
         }
       }
     }
